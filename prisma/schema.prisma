@@ -1,0 +1,326 @@
+// Event Management Platform - Database Schema
+// For photobooth/DJ/videography business
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+enum UserRole {
+  ADMIN           // Full access
+  SALES_LEAD      // Manage leads & events
+  MANAGER         // Manage staff & schedules
+  EMPLOYEE        // Clock in/out, view assignments
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+}
+
+model User {
+  id            String          @id @default(cuid())
+  clerkId       String          @unique // Clerk user ID
+  email         String          @unique
+  firstName     String
+  lastName      String
+  phone         String?
+  role          UserRole        @default(EMPLOYEE)
+  
+  // Employee specific fields
+  employmentType EmploymentType?
+  jobTitle      String?         // Videographer, DJ, Photographer, etc.
+  hourlyRate    Decimal?        @db.Decimal(10, 2)
+  hireDate      DateTime?
+  isActive      Boolean         @default(true)
+  
+  // Profile
+  avatar        String?
+  bio           String?
+  
+  // Availability
+  availability  Availability[]
+  
+  // Relations
+  assignedEvents EventAssignment[]
+  timeEntries   TimeEntry[]
+  createdLeads  Lead[]          @relation("LeadCreatedBy")
+  
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  @@index([clerkId])
+  @@index([role])
+  @@index([isActive])
+}
+
+// Employee availability patterns
+model Availability {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  dayOfWeek   Int       // 0 = Sunday, 6 = Saturday
+  startTime   String    // "09:00"
+  endTime     String    // "17:00"
+  isAvailable Boolean   @default(true)
+  
+  @@index([userId])
+}
+
+// ============================================
+// LEADS & CLIENT MANAGEMENT
+// ============================================
+
+enum LeadStatus {
+  NEW                 // Just submitted form
+  CONTACTED          // Initial contact made
+  QUOTED             // Quote sent
+  FOLLOW_UP          // Waiting for response
+  ATTEND_EVENT       // Ready to convert to event
+  WON                // Converted to event
+  LOST               // Didn't book
+}
+
+enum LeadSource {
+  WEBSITE_FORM
+  PHONE
+  EMAIL
+  REFERRAL
+  SOCIAL_MEDIA
+  OTHER
+}
+
+model Lead {
+  id              String      @id @default(cuid())
+  
+  // Client Info
+  clientName      String
+  clientEmail     String
+  clientPhone     String
+  
+  // Event Details
+  eventName       String
+  eventType       String      // Wedding, Corporate, Social, etc.
+  eventDate       DateTime?
+  eventLocation   String?
+  guestCount      Int?
+  
+  // Lead Management
+  status          LeadStatus  @default(NEW)
+  source          LeadSource  @default(WEBSITE_FORM)
+  notes           String?     @db.Text
+  
+  // Assignment
+  assignedToId    String?
+  assignedTo      User?       @relation("LeadCreatedBy", fields: [assignedToId], references: [id])
+  
+  // Conversion
+  convertedToEventId String?  @unique
+  convertedToEvent   Event?   @relation("LeadToEvent")
+  
+  // Metadata
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([status])
+  @@index([eventDate])
+  @@index([assignedToId])
+}
+
+// ============================================
+// EVENTS & BOOKINGS
+// ============================================
+
+enum EventStatus {
+  SCHEDULED       // Event confirmed
+  IN_PROGRESS     // Currently happening
+  COMPLETED       // Event finished
+  CANCELLED       // Event cancelled
+}
+
+model Event {
+  id              String        @id @default(cuid())
+  
+  // Event Details
+  name            String
+  type            String        // Wedding, Corporate, Birthday, etc.
+  date            DateTime
+  startTime       String        // "18:00"
+  endTime         String        // "23:00"
+  location        String
+  address         String?
+  city            String?
+  
+  // Client Info
+  clientName      String
+  clientEmail     String
+  clientPhone     String
+  guestCount      Int?
+  
+  // Services
+  services        String[]      // ["Photobooth", "DJ", "Videography"]
+  
+  // Status & Notes
+  status          EventStatus   @default(SCHEDULED)
+  notes           String?       @db.Text
+  internalNotes   String?       @db.Text
+  
+  // Financial
+  totalPrice      Decimal?      @db.Decimal(10, 2)
+  deposit         Decimal?      @db.Decimal(10, 2)
+  isPaid          Boolean       @default(false)
+  
+  // Relations
+  assignments     EventAssignment[]
+  timeEntries     TimeEntry[]
+  lead            Lead?         @relation("LeadToEvent", fields: [leadId], references: [id])
+  leadId          String?       @unique
+  
+  // Metadata
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@index([date])
+  @@index([status])
+  @@index([type])
+}
+
+// Staff assignments to events
+model EventAssignment {
+  id          String    @id @default(cuid())
+  
+  eventId     String
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  role        String    // "DJ", "Photographer", "Videographer", etc.
+  
+  // Assignment details
+  notes       String?
+  isConfirmed Boolean   @default(false)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+// ============================================
+// TIME TRACKING
+// ============================================
+
+enum ClockAction {
+  CLOCK_IN
+  CLOCK_OUT
+  BREAK_START
+  BREAK_END
+}
+
+model TimeEntry {
+  id          String      @id @default(cuid())
+  
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  eventId     String?
+  event       Event?      @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  
+  // Time tracking
+  clockIn     DateTime
+  clockOut    DateTime?
+  
+  // Location tracking (optional)
+  clockInLat  Decimal?    @db.Decimal(10, 8)
+  clockInLng  Decimal?    @db.Decimal(11, 8)
+  clockOutLat Decimal?    @db.Decimal(10, 8)
+  clockOutLng Decimal?    @db.Decimal(11, 8)
+  
+  // Calculated fields
+  totalHours  Decimal?    @db.Decimal(5, 2)
+  
+  // Break time
+  breakMinutes Int?       @default(0)
+  
+  // Notes
+  notes       String?
+  
+  // Approval
+  isApproved  Boolean     @default(false)
+  approvedBy  String?
+  approvedAt  DateTime?
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  @@index([userId])
+  @@index([eventId])
+  @@index([clockIn])
+}
+
+// ============================================
+// NOTIFICATIONS & AUTOMATION
+// ============================================
+
+enum NotificationType {
+  SMS
+  EMAIL
+  PUSH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model Notification {
+  id          String              @id @default(cuid())
+  
+  type        NotificationType
+  status      NotificationStatus  @default(PENDING)
+  
+  // Recipient
+  recipient   String              // Phone number or email
+  
+  // Content
+  subject     String?
+  message     String              @db.Text
+  
+  // Metadata
+  eventId     String?
+  userId      String?
+  
+  sentAt      DateTime?
+  error       String?
+  
+  createdAt   DateTime            @default(now())
+  
+  @@index([status])
+  @@index([type])
+}
+
+// ============================================
+// SYSTEM SETTINGS
+// ============================================
+
+model Settings {
+  id          String    @id @default(cuid())
+  key         String    @unique
+  value       String    @db.Text
+  
+  updatedAt   DateTime  @updatedAt
+}
