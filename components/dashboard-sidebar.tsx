@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link" // Added Next.js Link
+import { usePathname } from "next/navigation" // Added usePathname hook
 import {
   LayoutDashboard,
   Clock,
@@ -18,7 +20,6 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { usePathname } from 'next/navigation'
 
 const navigation = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/", current: false },
@@ -40,7 +41,7 @@ const branches = [
 
 export function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false)
-  const currentPath = usePathname()
+  const currentPath = usePathname() // Use Next.js hook instead of window.location
 
   return (
     <div
@@ -75,7 +76,7 @@ export function DashboardSidebar() {
         {navigation.map((item) => {
           const isCurrent = currentPath === item.href
           return (
-            <a
+            <Link
               key={item.name}
               href={item.href}
               className={cn(
@@ -87,7 +88,7 @@ export function DashboardSidebar() {
             >
               <item.icon className="h-5 w-5 flex-shrink-0" />
               {!collapsed && <span>{item.name}</span>}
-            </a>
+            </Link>
           )
         })}
       </nav>
