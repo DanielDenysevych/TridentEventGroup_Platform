@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Calendar, MapPin, Users, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { format, isToday, isTomorrow, isFuture } from "date-fns"
+import { format, isToday, isTomorrow, isFuture, isSameDay } from "date-fns"
 
 type EventWithRelations = {
   id: string
@@ -42,22 +42,40 @@ function getServiceName(services: string[]) {
   return services.length > 0 ? serviceMap[services[0]] || "Event" : "Event"
 }
 
-export function EventsList({ events }: { events: EventWithRelations[] }) {
-  const upcomingEvents = events
-    .filter((e) => isFuture(new Date(e.eventDate)) || isToday(new Date(e.eventDate)))
-    .slice(0, 4)
+export function EventsList({
+  events,
+  selectedDate
+}: {
+  events: EventWithRelations[]
+  selectedDate?: Date | null
+}) {
+  const displayEvents = selectedDate
+    ? events.filter((e) => isSameDay(new Date(e.eventDate), selectedDate))
+    : events
+      .filter((e) => isFuture(new Date(e.eventDate)) || isToday(new Date(e.eventDate)))
+      .slice(0, 4)
+
+  const title = selectedDate
+    ? `Events on ${format(selectedDate, "MMM d, yyyy")}`
+    : "Upcoming Events"
+
+  const description = selectedDate
+    ? `${displayEvents.length} event${displayEvents.length !== 1 ? 's' : ''} scheduled`
+    : "Next scheduled events"
 
   return (
     <Card className="lg:col-span-1">
       <CardHeader>
-        <CardTitle>Upcoming Events</CardTitle>
-        <CardDescription>Next scheduled events</CardDescription>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {upcomingEvents.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No upcoming events scheduled</p>
+        {displayEvents.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            {selectedDate ? "No events scheduled for this day" : "No upcoming events scheduled"}
+          </p>
         ) : (
-          upcomingEvents.map((event) => (
+          displayEvents.map((event) => (
             <div
               key={event.id}
               className="p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer space-y-3"

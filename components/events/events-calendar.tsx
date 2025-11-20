@@ -31,7 +31,14 @@ function getServiceColor(services: string[]) {
   return "bg-gray-500"
 }
 
-export function EventsCalendar({ events }: { events: EventWithRelations[] }) {
+export function EventsCalendar({
+  events,
+  onDateClick
+}: {
+  events: EventWithRelations[]
+  onDateClick?: (date: Date) => void
+}) {
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [currentDate, setCurrentDate] = useState(new Date())
 
   const monthStart = startOfMonth(currentDate)
@@ -53,6 +60,11 @@ export function EventsCalendar({ events }: { events: EventWithRelations[] }) {
 
   const goToToday = () => {
     setCurrentDate(new Date())
+  }
+
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date)
+    onDateClick?.(date)
   }
 
   return (
@@ -93,15 +105,21 @@ export function EventsCalendar({ events }: { events: EventWithRelations[] }) {
             {daysInMonth.map((date) => {
               const dayEvents = events.filter((e) => isSameDay(new Date(e.eventDate), date))
               const isDayToday = isToday(date)
+              const isSelected = selectedDate && isSameDay(selectedDate, date)
 
               return (
                 <div
                   key={date.toISOString()}
-                  className={`min-h-24 p-2 rounded-lg border transition-colors hover:bg-accent/50 cursor-pointer ${
-                    isDayToday ? "border-primary bg-primary/5" : "border-border"
-                  }`}
+                  onClick={() => handleDateClick(date)}
+                  className={`min-h-24 p-2 rounded-lg border transition-colors hover:bg-accent/50 cursor-pointer ${isSelected
+                    ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2"
+                    : isDayToday
+                      ? "border-primary bg-primary/5"
+                      : "border-border"
+                    }`}
                 >
-                  <div className={`text-sm font-medium mb-1 ${isDayToday ? "text-primary" : "text-foreground"}`}>
+                  <div className={`text-sm font-medium mb-1 ${isSelected ? "text-primary font-bold" : isDayToday ? "text-primary" : "text-foreground"
+                    }`}>
                     {format(date, "d")}
                   </div>
                   <div className="space-y-1">
