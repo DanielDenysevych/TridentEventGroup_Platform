@@ -78,6 +78,15 @@ export function EventsList({
     setIsDetailsOpen(true)
   }
 
+  const handleEventUpdate = () => {
+    // Close and reopen the dialog to fetch fresh data
+    setIsDetailsOpen(false)
+    // Small delay to ensure the dialog closes before reopening
+    setTimeout(() => {
+      setIsDetailsOpen(true)
+    }, 100)
+  }
+
   return (
     <Card className="lg:col-span-1">
       <CardHeader>
@@ -146,6 +155,7 @@ export function EventsList({
         event={selectedEvent}
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
+        onEventUpdate={handleEventUpdate}
       />
     </Card>
   )

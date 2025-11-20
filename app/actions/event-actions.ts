@@ -69,3 +69,40 @@ export async function createEvent(formData: FormData) {
     return { success: false, error: "Failed to create event. Please try again." }
   }
 }
+
+export async function updateEvent(eventId: string, data: {
+  name?: string
+  date?: Date
+  startTime?: string
+  location?: string
+  address?: string
+  city?: string
+  guestCount?: number
+  totalPrice?: number
+  deposit?: number
+}) {
+  try {
+    await db.event.update({
+      where: { id: eventId },
+      data: {
+        name: data.name,
+        date: data.date,
+        startTime: data.startTime,
+        location: data.location,
+        address: data.address,
+        city: data.city,
+        guestCount: data.guestCount,
+        totalPrice: data.totalPrice,
+        deposit: data.deposit,
+      },
+    })
+
+    revalidatePath("/events")
+    revalidatePath("/")
+    
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to update event:", error)
+    return { success: false, error: "Failed to update event" }
+  }
+}
