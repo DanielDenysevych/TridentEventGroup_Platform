@@ -1,8 +1,12 @@
+"use client"
+
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, MapPin, Users, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { format, isToday, isTomorrow, isFuture, isSameDay } from "date-fns"
+import { EventDetailsDialog } from "./event-details-dialog"
 
 type EventWithRelations = {
   id: string
@@ -14,8 +18,11 @@ type EventWithRelations = {
   city: string | null
   guestCount: number | null
   services: string[]
+  totalPrice: number | null
+  deposit: number | null
   lead: {
     clientName: string
+    clientEmail: string
   } | null
   assignments: {
     user: {
@@ -49,6 +56,9 @@ export function EventsList({
   events: EventWithRelations[]
   selectedDate?: Date | null
 }) {
+  const [selectedEvent, setSelectedEvent] = useState<EventWithRelations | null>(null)
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+
   const displayEvents = selectedDate
     ? events.filter((e) => isSameDay(new Date(e.eventDate), selectedDate))
     : events
@@ -62,6 +72,11 @@ export function EventsList({
   const description = selectedDate
     ? `${displayEvents.length} event${displayEvents.length !== 1 ? 's' : ''} scheduled`
     : "Next scheduled events"
+
+  const handleViewDetails = (event: EventWithRelations) => {
+    setSelectedEvent(event)
+    setIsDetailsOpen(true)
+  }
 
   return (
     <Card className="lg:col-span-1">
@@ -78,6 +93,7 @@ export function EventsList({
           displayEvents.map((event) => (
             <div
               key={event.id}
+              onClick={() => handleViewDetails(event)}
               className="p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer space-y-3"
             >
               <div className="flex items-start justify-between gap-2">
@@ -115,13 +131,22 @@ export function EventsList({
                 )}
               </div>
 
-              <Button variant="outline" size="sm" className="w-full bg-transparent">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full bg-transparent cursor-pointer"
+              >
                 View Details
               </Button>
             </div>
           ))
         )}
       </CardContent>
+      <EventDetailsDialog
+        event={selectedEvent}
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+      />
     </Card>
   )
 }
