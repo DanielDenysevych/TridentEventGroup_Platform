@@ -2,55 +2,51 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Calendar, MapPin, Users, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { format, isToday, isTomorrow, isFuture } from "date-fns"
 
-const upcomingEvents = [
-  {
-    id: 1,
-    title: "Wedding - Smith & Johnson",
-    date: "Today",
-    time: "2:00 PM",
-    location: "Grand Hotel Ballroom",
-    client: "Emma Smith",
-    branch: "Films",
-    color: "bg-blue-500",
-    attendees: 150,
-  },
-  {
-    id: 2,
-    title: "Corporate Gala",
-    date: "Tomorrow",
-    time: "6:00 PM",
-    location: "Convention Center",
-    client: "Tech Corp",
-    branch: "A/V",
-    color: "bg-green-500",
-    attendees: 300,
-  },
-  {
-    id: 3,
-    title: "Birthday Party",
-    date: "Dec 15",
-    time: "4:00 PM",
-    location: "Private Residence",
-    client: "Sarah Anderson",
-    branch: "Music",
-    color: "bg-purple-500",
-    attendees: 50,
-  },
-  {
-    id: 4,
-    title: "Photo Session",
-    date: "Dec 17",
-    time: "10:00 AM",
-    location: "Downtown Studio",
-    client: "John Martinez",
-    branch: "Studios",
-    color: "bg-pink-500",
-    attendees: 5,
-  },
-]
+type EventWithRelations = {
+  id: string
+  eventName: string
+  eventDate: Date
+  eventTime: string | null
+  venue: string | null
+  address: string | null
+  city: string | null
+  guestCount: number | null
+  services: string[]
+  lead: {
+    clientName: string
+  } | null
+  assignments: {
+    user: {
+      firstName: string
+      lastName: string
+    }
+  }[]
+}
 
-export function EventsList() {
+function formatEventDate(date: Date) {
+  if (isToday(date)) return "Today"
+  if (isTomorrow(date)) return "Tomorrow"
+  return format(date, "MMM d")
+}
+
+function getServiceName(services: string[]) {
+  const serviceMap: Record<string, string> = {
+    TRIDENT_FILMS: "Films",
+    TRIDENT_MUSIC: "Music",
+    TRIDENT_STUDIOS: "Studios",
+    TRIDENT_PHOTOBOOTH: "Photobooth",
+    TRIDENT_AV: "A/V",
+  }
+  return services.length > 0 ? serviceMap[services[0]] || "Event" : "Event"
+}
+
+export function EventsList({ events }: { events: EventWithRelations[] }) {
+  const upcomingEvents = events
+    .filter((e) => isFuture(new Date(e.eventDate)) || isToday(new Date(e.eventDate)))
+    .slice(0, 4)
+
   return (
     <Card className="lg:col-span-1">
       <CardHeader>
@@ -58,45 +54,55 @@ export function EventsList() {
         <CardDescription>Next scheduled events</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {upcomingEvents.map((event) => (
-          <div
-            key={event.id}
-            className="p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer space-y-3"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 space-y-1">
-                <h4 className="font-medium text-sm leading-tight">{event.title}</h4>
-                <p className="text-xs text-muted-foreground">{event.client}</p>
+        {upcomingEvents.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No upcoming events scheduled</p>
+        ) : (
+          upcomingEvents.map((event) => (
+            <div
+              key={event.id}
+              className="p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer space-y-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 space-y-1">
+                  <h4 className="font-medium text-sm leading-tight">{event.eventName}</h4>
+                  <p className="text-xs text-muted-foreground">{event.lead?.clientName || "No client"}</p>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {getServiceName(event.services)}
+                </Badge>
               </div>
-              <Badge variant="outline" className="text-xs">
-                {event.branch}
-              </Badge>
-            </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span>{event.date}</span>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Calendar className="h-3 w-3" />
+                  <span>{formatEventDate(new Date(event.eventDate))}</span>
+                </div>
+                {event.eventTime && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span>{event.eventTime}</span>
+                  </div>
+                )}
+                {event.venue && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3" />
+                    <span>{event.venue}</span>
+                  </div>
+                )}
+                {event.guestCount && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Users className="h-3 w-3" />
+                    <span>{event.guestCount} attendees</span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                <span>{event.time}</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <MapPin className="h-3 w-3" />
-                <span>{event.location}</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Users className="h-3 w-3" />
-                <span>{event.attendees} attendees</span>
-              </div>
-            </div>
 
-            <Button variant="outline" size="sm" className="w-full bg-transparent">
-              View Details
-            </Button>
-          </div>
-        ))}
+              <Button variant="outline" size="sm" className="w-full bg-transparent">
+                View Details
+              </Button>
+            </div>
+          ))
+        )}
       </CardContent>
     </Card>
   )
