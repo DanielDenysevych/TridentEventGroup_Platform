@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, Users, Clock, DollarSign, Phone, Mail } from "lucide-react"
+import { Calendar, MapPin, Users, Clock, DollarSign, Phone, Mail, Trash2 } from "lucide-react"
 import { format } from "date-fns"
-import { updateEvent } from "@/app/actions/event-actions"
+import { updateEvent, deleteEvent } from "@/app/actions/event-actions"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -38,16 +38,18 @@ type EventWithRelations = {
 }
 
 interface EventDetailsDialogProps {
-  event: EventWithRelations | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onEventUpdate: () => void
+    event: EventWithRelations | null
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    onEventUpdate: () => void
+    isAdmin: boolean
 }
 
-export function EventDetailsDialog({ event, open, onOpenChange, onEventUpdate }: EventDetailsDialogProps) {
-
+export function EventDetailsDialog({ event, open, onOpenChange, onEventUpdate, isAdmin }: EventDetailsDialogProps) {
+    
     const [isEditing, setIsEditing] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
     const router = useRouter()
 
     // Form state
@@ -108,6 +110,24 @@ export function EventDetailsDialog({ event, open, onOpenChange, onEventUpdate }:
         } else {
             toast.error("Failed to update event")
             console.error("Failed to update event")
+        }
+    }
+
+    const handleDelete = async () => {
+        if (!event || !confirm("Are you sure you want to delete this event? This action cannot be undone.")) return
+
+        setIsDeleting(true)
+
+        const result = await deleteEvent(event.id)
+
+        setIsDeleting(false)
+
+        if (result.success) {
+            onOpenChange(false)
+            router.refresh()
+            toast.success("Event deleted successfully")
+        } else {
+            toast.error("Failed to delete event")
         }
     }
 
@@ -342,26 +362,41 @@ export function EventDetailsDialog({ event, open, onOpenChange, onEventUpdate }:
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                    {isEditing ? (
-                        <>
-                            <Button variant="outline" className="cursor-pointer" onClick={() => setIsEditing(false)}>
-                                Cancel
+                <div className="flex justify-between gap-2 pt-4 border-t">
+                    <div>
+                        {isAdmin && !isEditing && (
+                            <Button
+                                variant="destructive"
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                                className="cursor-pointer"
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                {isDeleting ? "Deleting..." : "Delete Event"}
                             </Button>
-                            <Button onClick={handleSave} disabled={isSaving} className="cursor-pointer">
-                                {isSaving ? "Saving..." : "Save Changes"}
-                            </Button>
-                        </>
-                    ) : (
-                        <>
-                            <Button variant="outline" className="cursor-pointer" onClick={() => onOpenChange(false)}>
-                                Close
-                            </Button>
-                            <Button onClick={() => setIsEditing(true)} className="cursor-pointer">
-                                Edit Event
-                            </Button>
-                        </>
-                    )}
+                        )}
+                    </div>
+                    <div className="flex gap-2">
+                        {isEditing ? (
+                            <>
+                                <Button variant="outline" className="cursor-pointer" onClick={() => setIsEditing(false)}>
+                                    Cancel
+                                </Button>
+                                <Button onClick={handleSave} disabled={isSaving} className="cursor-pointer">
+                                    {isSaving ? "Saving..." : "Save Changes"}
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button variant="outline" className="cursor-pointer" onClick={() => onOpenChange(false)}>
+                                    Close
+                                </Button>
+                                <Button onClick={() => setIsEditing(true)} className="cursor-pointer">
+                                    Edit Event
+                                </Button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>

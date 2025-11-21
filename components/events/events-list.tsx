@@ -30,7 +30,7 @@ type EventWithRelations = {
       lastName: string
     }
   }[]
-}
+} 
 
 function formatEventDate(date: Date) {
   if (isToday(date)) return "Today"
@@ -51,11 +51,14 @@ function getServiceName(services: string[]) {
 
 export function EventsList({
   events,
-  selectedDate
+  selectedDate,
+  isAdmin
 }: {
   events: EventWithRelations[]
   selectedDate?: Date | null
+  isAdmin: boolean
 }) {
+  console.log("EventsList isAdmin prop:", isAdmin)
   const [selectedEvent, setSelectedEvent] = useState<EventWithRelations | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
 
@@ -156,6 +159,7 @@ export function EventsList({
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
         onEventUpdate={handleEventUpdate}
+        isAdmin={isAdmin}
       />
     </Card>
   )

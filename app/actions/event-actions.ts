@@ -106,3 +106,19 @@ export async function updateEvent(eventId: string, data: {
     return { success: false, error: "Failed to update event" }
   }
 }
+
+export async function deleteEvent(eventId: string) {
+  try {
+    await db.event.delete({
+      where: { id: eventId },
+    })
+
+    revalidatePath("/events")
+    revalidatePath("/")
+    
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to delete event:", error)
+    return { success: false, error: "Failed to delete event" }
+  }
+}

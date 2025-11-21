@@ -3,8 +3,22 @@ import { EventsCalendar } from "@/components/events/events-calendar"
 import { EventsList } from "@/components/events/events-list"
 import { db } from "@/lib/db"
 import { EventsView } from "@/components/events/events-view"
+import { auth } from "@clerk/nextjs/server"
 
 export default async function EventsPage() {
+  const { userId } = await auth()
+
+  const currentUser = userId ? await db.user.findUnique({
+    where: { clerkId: userId },
+    select: { role: true }
+  }) : null
+
+  console.log("userId from Clerk:", userId)
+  console.log("currentUser from DB:", currentUser)
+  console.log("currentUser role:", currentUser?.role)
+  console.log("Role type:", typeof currentUser?.role)
+  console.log("Is exactly ADMIN?:", currentUser?.role === "ADMIN")
+
   const users = await db.user.findMany({
     where: {
       isActive: true,
@@ -57,7 +71,7 @@ export default async function EventsPage() {
   return (
     <main className="flex-1 p-6 lg:p-8 space-y-6">
       <EventsHeader users={users} />
-      <EventsView events={events} />
+      <EventsView events={events} isAdmin={currentUser?.role === "ADMIN"} />
     </main>
   )
 }

@@ -47,16 +47,22 @@ export async function POST(req: Request) {
   // Handle different events
   const eventType = evt.type
 
+
   if (eventType === 'user.created') {
     const { id, email_addresses, first_name, last_name, phone_numbers } = evt.data
+
+    // List of admin emails
+    const adminEmails = ['your-email@example.com', 'admin@example.com']
+    const email = email_addresses[0].email_address
 
     await db.user.create({
       data: {
         clerkId: id,
-        email: email_addresses[0].email_address,
+        email: email,
         firstName: first_name || 'not',
         lastName: last_name || 'provided',
         phone: phone_numbers?.[0]?.phone_number || null,
+        role: adminEmails.includes(email) ? 'ADMIN' : 'EMPLOYEE',
       },
     })
 

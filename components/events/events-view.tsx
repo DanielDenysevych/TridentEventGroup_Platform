@@ -14,8 +14,11 @@ type EventWithRelations = {
   city: string | null
   guestCount: number | null
   services: string[]
+  totalPrice: number | null
+  deposit: number | null
   lead: {
     clientName: string
+    clientEmail: string
   } | null
   assignments: {
     user: {
@@ -25,7 +28,7 @@ type EventWithRelations = {
   }[]
 }
 
-export function EventsView({ events }: { events: EventWithRelations[] }) {
+export function EventsView({ events, isAdmin }: { events: EventWithRelations[]; isAdmin: boolean }) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
 
   return (
@@ -33,7 +36,7 @@ export function EventsView({ events }: { events: EventWithRelations[] }) {
       <div className="lg:col-span-2">
         <EventsCalendar events={events} onDateClick={setSelectedDate} />
       </div>
-      <EventsList events={events} selectedDate={selectedDate} />
+      <EventsList events={events} selectedDate={selectedDate} isAdmin={isAdmin} />
     </div>
   )
 }
