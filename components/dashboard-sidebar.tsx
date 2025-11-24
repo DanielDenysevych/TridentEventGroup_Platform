@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link" // Added Next.js Link
-import { usePathname } from "next/navigation" // Added usePathname hook
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   Clock,
@@ -17,19 +17,11 @@ import {
   Camera,
   MonitorPlay,
   Sparkles,
+  Shield,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-
-const navigation = [
-  { name: "Dashboard", icon: LayoutDashboard, href: "/", current: false },
-  { name: "Time Tracking", icon: Clock, href: "/time-tracking", current: false },
-  { name: "Events", icon: Calendar, href: "/events", current: false },
-  { name: "Client Inquiries", icon: Users, href: "/inquiries", current: false },
-  { name: "Team Chat", icon: MessageSquare, href: "/chat", current: false },
-  { name: "Email Campaigns", icon: Mail, href: "/email", current: false },
-  { name: "Settings", icon: Settings, href: "/settings", current: false },
-]
+import { useUser } from "@clerk/nextjs"
 
 const branches = [
   { name: "Trident Films", icon: Video, color: "text-blue-400" },
@@ -41,7 +33,39 @@ const branches = [
 
 export function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false)
-  const currentPath = usePathname() // Use Next.js hook instead of window.location
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const currentPath = usePathname()
+  const { user } = useUser()
+
+  useEffect(() => {
+    // Fetch user role from your database
+    if (user) {
+      fetch('/api/user/role')
+        .then(res => res.json())
+        .then(data => setUserRole(data.role))
+        .catch(console.error)
+    }
+  }, [user])
+
+  // Build navigation based on user role
+  const baseNavigation = [
+    { name: "Dashboard", icon: LayoutDashboard, href: "/", current: false },
+    { name: "Time Tracking", icon: Clock, href: "/time-tracking", current: false },
+    { name: "Events", icon: Calendar, href: "/events", current: false },
+    { name: "Client Inquiries", icon: Users, href: "/inquiries", current: false },
+    { name: "Team Chat", icon: MessageSquare, href: "/chat", current: false },
+    { name: "Email Campaigns", icon: Mail, href: "/email", current: false },
+    { name: "Settings", icon: Settings, href: "/settings", current: false },
+  ]
+
+  // Add admin link if user is admin (after Dashboard)
+  const navigation = userRole === 'ADMIN' 
+    ? [
+        baseNavigation[0], // Dashboard
+        { name: "Admin", icon: Shield, href: "/admin", current: false },
+        ...baseNavigation.slice(1) // Rest of the items
+      ]
+    : baseNavigation
 
   return (
     <div
@@ -113,12 +137,18 @@ export function DashboardSidebar() {
       <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground text-xs font-medium">JD</span>
+            <span className="text-primary-foreground text-xs font-medium">
+              {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+            </span>
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sidebar-foreground text-sm font-medium truncate">John Doe</p>
-              <p className="text-sidebar-foreground/60 text-xs truncate">Admin</p>
+              <p className="text-sidebar-foreground text-sm font-medium truncate">
+                {user?.firstName} {user?.lastName}
+              </p>
+              <p className="text-sidebar-foreground/60 text-xs truncate capitalize">
+                {userRole?.toLowerCase() || 'Employee'}
+              </p>
             </div>
           )}
         </div>
