@@ -51,49 +51,76 @@ export async function POST(req: Request) {
   if (eventType === 'user.created') {
     const { id, email_addresses, first_name, last_name, phone_numbers } = evt.data
 
-    // List of admin emails
     const adminEmails = ['your-email@example.com', 'admin@example.com']
     const email = email_addresses[0].email_address
 
-    await db.user.create({
-      data: {
-        clerkId: id,
-        email: email,
-        firstName: first_name || 'not',
-        lastName: last_name || 'provided',
-        phone: phone_numbers?.[0]?.phone_number || null,
-        role: adminEmails.includes(email) ? 'ADMIN' : 'EMPLOYEE',
-      },
-    })
-
-    console.log('User created in database:', id)
+    try {
+      await db.user.create({
+        data: {
+          clerkId: id,
+          email: email,
+          firstName: first_name || 'not',
+          lastName: last_name || 'provided',
+          phone: phone_numbers?.[0]?.phone_number || null,
+          role: adminEmails.includes(email) ? 'ADMIN' : 'EMPLOYEE',
+        },
+      })
+      console.log('User created in database:', id)
+    } catch (error: any) {
+      // If user already exists, just update the clerkId
+      if (error.code === 'P2002') {
+        await db.user.update({
+          where: { email: email },
+          data: { clerkId: id },
+        })
+        console.log('Existing user updated with clerkId:', id)
+      } else {
+        throw error
+      }
+    }
   }
 
   if (eventType === 'user.updated') {
     const { id, email_addresses, first_name, last_name, phone_numbers } = evt.data
 
-    await db.user.update({
+    await db.user.upsert({
       where: { clerkId: id },
-      data: {
+      update: {
         email: email_addresses[0].email_address,
         firstName: first_name || '',
         lastName: last_name || '',
-        phone: phone_numbers[0]?.phone_number,
+        phone: phone_numbers?.[0]?.phone_number || null,
+      },
+      create: {
+        clerkId: id,
+        email: email_addresses[0].email_address,
+        firstName: first_name || '',
+        lastName: last_name || '',
+        phone: phone_numbers?.[0]?.phone_number || null,
+        role: 'EMPLOYEE',
       },
     })
 
-    console.log('User updated in database:', id)
+    console.log('User upserted in database:', id)
   }
 
   if (eventType === 'user.deleted') {
     const { id } = evt.data
 
-    await db.user.update({
-      where: { clerkId: id! },
-      data: { isActive: false },
-    })
-
-    console.log('User deactivated in database:', id)
+    try {
+      await db.user.update({
+        where: { clerkId: id! },
+        data: { isActive: false },
+      })
+      console.log('User deactivated in database:', id)
+    } catch (error: any) {
+      // If user doesn't exist in database, just log it
+      if (error.code === 'P2025') {
+        console.log('User not found in database for deletion:', id)
+      } else {
+        throw error
+      }
+    }
   }
 
   return NextResponse.json({ success: true })
