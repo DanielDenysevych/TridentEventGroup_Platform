@@ -19,11 +19,11 @@ export default async function AdminDashboard() {
     db.user.count(),
     db.user.count({ where: { isActive: true, role: 'EMPLOYEE' } }),
     db.lead.count({ where: { status: 'NEW' } }),
-    db.event.count({ 
-      where: { 
+    db.event.count({
+      where: {
         date: { gte: new Date() },
         status: 'SCHEDULED'
-      } 
+      }
     }),
     db.timeEntry.findMany({
       take: 5,
@@ -84,13 +84,22 @@ export default async function AdminDashboard() {
             <CardTitle className="text-sm font-medium">Pending Leads</CardTitle>
             <TrendingUpIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
+
           <CardContent>
             <div className="text-2xl font-bold">{pendingLeads}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mb-3">
               Require attention
             </p>
+
+            <a
+              href="/admin/leads"
+              className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition"
+            >
+              View Leads
+            </a>
           </CardContent>
         </Card>
+
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
