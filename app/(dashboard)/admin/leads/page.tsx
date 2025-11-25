@@ -2,7 +2,9 @@ import { db } from '@/lib/db'
 import { LeadStatus, LeadSource } from '@prisma/client'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { BackArrow  } from '@/components/back-arrow'
+import { BackArrow } from '@/components/back-arrow'
+import { LeadStatusSelect } from '@/components/lead-status-select'
+
 
 function getStatusClasses(status: LeadStatus) {
     switch (status) {
@@ -122,13 +124,7 @@ export default async function LeadsPage() {
                                     </td>
 
                                     <td className="px-4 py-3 align-top whitespace-nowrap">
-                                        <span
-                                            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${getStatusClasses(
-                                                lead.status
-                                            )}`}
-                                        >
-                                            {lead.status.replace('_', ' ')}
-                                        </span>
+                                        <LeadStatusSelect leadId={lead.id} initialStatus={lead.status} />
                                     </td>
 
                                     <td className="px-4 py-3 align-top whitespace-nowrap text-right text-xs text-muted-foreground">
