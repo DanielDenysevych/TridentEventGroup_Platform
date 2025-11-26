@@ -64,7 +64,14 @@ export async function GET() {
     for (const entry of weekEntries) {
         const start = new Date(entry.clockIn)
         const end = entry.clockOut ? new Date(entry.clockOut) : now
-        const h = msToHours(end.getTime() - start.getTime())
+
+        let h = msToHours(end.getTime() - start.getTime())
+
+        // Subtract unpaid break
+        const breakMinutes = entry.breakMinutes ?? 0
+        h -= breakMinutes / 60
+        if (h < 0) h = 0
+
         const bucket = days.find((d) => d.key === start.getDay())
         if (bucket) bucket.hours += h
     }
@@ -107,13 +114,15 @@ export async function GET() {
         const ci = new Date(entry.clockIn)
         const co = entry.clockOut ? new Date(entry.clockOut) : null
 
-        const hours = msToHours((co ?? now).getTime() - ci.getTime())
+        let hours = msToHours((co ?? now).getTime() - ci.getTime())
+
+        // Subtract unpaid break
+        const breakMinutes = entry.breakMinutes ?? 0
+        hours -= breakMinutes / 60
+        if (hours < 0) hours = 0
 
         const event = entry.event as any | null
 
-        // What to show as the "project" name in the UI
-        // Try event.name first, then fall back to something like "Wedding - Smith & Johnson",
-        // and finally "Work Session" if nothing else exists.
         let project = "Work Session"
         if (event) {
             project =
@@ -124,8 +133,6 @@ export async function GET() {
                 project
         }
 
-        // Small badge on the right (was Films / A/V / Studios in your mock)
-        // For now we’ll use the event.type (Wedding, Corporate, etc.) or nothing.
         const branch: string | null = (event?.type as string | undefined) ?? null
 
         return {
@@ -136,7 +143,8 @@ export async function GET() {
             hours: Number(hours.toFixed(2)),
             project,
             branch,
-            status: co ? "completed" : "active"
+            status: co ? "completed" : "active",
+            hasOneHourBreak: breakMinutes >= 60,
         }
     })
 
