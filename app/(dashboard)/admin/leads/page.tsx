@@ -63,9 +63,7 @@ export default async function LeadsPage() {
     const salesUsers = await db.user.findMany({
         where: {
             isActive: true,
-            role: {
-                in: ['ADMIN', 'SALES_LEAD', 'MANAGER']
-            }
+            role: 'SALES_LEAD'
         },
         select: {
             id: true,
@@ -73,10 +71,9 @@ export default async function LeadsPage() {
             lastName: true,
             role: true,
         },
-        orderBy: [
-            { role: 'asc' },
-            { firstName: 'asc' }
-        ]
+        orderBy: {
+            firstName: 'asc'
+        }
     })
 
     return (

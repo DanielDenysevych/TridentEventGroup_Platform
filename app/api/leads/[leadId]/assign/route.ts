@@ -10,7 +10,6 @@ export async function PATCH(
     const body = await req.json()
     const { assignedToId } = body as { assignedToId?: string | null }
 
-    // If assignedToId is provided, verify the user exists and has appropriate role
     if (assignedToId) {
       const user = await db.user.findUnique({
         where: { id: assignedToId },
@@ -31,10 +30,10 @@ export async function PATCH(
         )
       }
 
-      // Only allow assignment to ADMIN, SALES_LEAD, or MANAGER
-      if (!['ADMIN', 'SALES_LEAD', 'MANAGER'].includes(user.role)) {
+      // Only allow assignment to SALES_LEAD
+      if (user.role !== 'SALES_LEAD') {
         return NextResponse.json(
-          { error: 'User does not have permission to handle leads' },
+          { error: 'Can only assign leads to sales team members' },
           { status: 400 }
         )
       }
