@@ -34,10 +34,10 @@ function formatTimeLabel(dateStr: string | null) {
 
 export function TimeClockCard() {
   const { toast } = useToast()
-
   const [isClockedIn, setIsClockedIn] = useState(false)
   const [startTime, setStartTime] = useState<Date | null>(null)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [baseSecondsToday, setBaseSecondsToday] = useState(0)
   const [loading, setLoading] = useState(false)
 
   // 1) Load initial status from server
@@ -55,14 +55,22 @@ export function TimeClockCard() {
 
         if (data.isClockedIn && data.openEntry) {
           const clockInDate = new Date(data.openEntry.clockIn)
+          setIsClockedIn(true)
           setStartTime(clockInDate)
 
           const now = Date.now()
-          const initialElapsed = Math.floor((now - clockInDate.getTime()) / 1000)
-          setElapsedSeconds(initialElapsed)
+          const secondsSinceClockIn = Math.floor((now - clockInDate.getTime()) / 1000)
+
+          // totalSecondsToday = previous shifts + current running shift
+          const previousSeconds = Math.max(0, (data.totalSecondsToday ?? 0) - secondsSinceClockIn)
+
+          setBaseSecondsToday(previousSeconds)
+          setElapsedSeconds(data.totalSecondsToday ?? secondsSinceClockIn)
         } else {
           setStartTime(null)
-          setElapsedSeconds(data.totalSecondsToday || 0)
+          setIsClockedIn(false)
+          setBaseSecondsToday(data.totalSecondsToday ?? 0)
+          setElapsedSeconds(data.totalSecondsToday ?? 0)
         }
       } catch (error) {
         console.error("Failed to load time clock status", error)
@@ -81,12 +89,12 @@ export function TimeClockCard() {
 
     const interval = setInterval(() => {
       const now = Date.now()
-      const diffSeconds = Math.floor((now - startTime.getTime()) / 1000)
-      setElapsedSeconds(diffSeconds)
+      const secondsSinceClockIn = Math.floor((now - startTime.getTime()) / 1000)
+      setElapsedSeconds(baseSecondsToday + secondsSinceClockIn)
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [isClockedIn, startTime])
+  }, [isClockedIn, startTime, baseSecondsToday])
 
   const handleClockToggle = async () => {
     if (loading) return
@@ -116,7 +124,8 @@ export function TimeClockCard() {
         const clockIn = new Date(data.entry.clockIn)
         setIsClockedIn(true)
         setStartTime(clockIn)
-        setElapsedSeconds(0)
+        setBaseSecondsToday(elapsedSeconds)
+        setElapsedSeconds(elapsedSeconds)
 
         toast({
           title: "Clocked in",
@@ -132,7 +141,9 @@ export function TimeClockCard() {
           const statusRes = await fetch("/api/time-clock")
           if (statusRes.ok) {
             const statusData: TimeClockStatusResponse = await statusRes.json()
-            setElapsedSeconds(statusData.totalSecondsToday || 0)
+            const total = statusData.totalSecondsToday || 0
+            setElapsedSeconds(total)
+            setBaseSecondsToday(total)
           }
         } catch {
           // ignore
