@@ -1,8 +1,6 @@
 import { EventsHeader } from "@/components/events/events-header"
-import { EventsCalendar } from "@/components/events/events-calendar"
-import { EventsList } from "@/components/events/events-list"
-import { db } from "@/lib/db"
 import { EventsView } from "@/components/events/events-view"
+import { db } from "@/lib/db"
 import { auth } from "@clerk/nextjs/server"
 
 export default async function EventsPage() {
@@ -12,12 +10,6 @@ export default async function EventsPage() {
     where: { clerkId: userId },
     select: { role: true }
   }) : null
-
-  console.log("userId from Clerk:", userId)
-  console.log("currentUser from DB:", currentUser)
-  console.log("currentUser role:", currentUser?.role)
-  console.log("Role type:", typeof currentUser?.role)
-  console.log("Is exactly ADMIN?:", currentUser?.role === "ADMIN")
 
   const users = await db.user.findMany({
     where: {
@@ -40,6 +32,7 @@ export default async function EventsPage() {
         select: {
           clientName: true,
           clientEmail: true,
+          notes: true,
         },
       },
       assignments: {
@@ -66,6 +59,9 @@ export default async function EventsPage() {
     venue: event.location,
     totalPrice: event.totalPrice ? Number(event.totalPrice) : null,
     deposit: event.deposit ? Number(event.deposit) : null,
+    status: event.status,
+    notes: event.notes,
+    internalNotes: event.internalNotes,
   }))
 
   return (
