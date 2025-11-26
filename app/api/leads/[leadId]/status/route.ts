@@ -4,10 +4,10 @@ import { LeadStatus } from '@prisma/client'
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { leadId: string } }
+  { params }: { params: Promise<{ leadId: string }> }
 ) {
   try {
-    const { leadId } = params
+    const { leadId } = await params  // <-- Await params here
     const body = await req.json()
     const { status } = body as { status?: LeadStatus }
 
