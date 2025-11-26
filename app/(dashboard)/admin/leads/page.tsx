@@ -1,10 +1,9 @@
 import { db } from '@/lib/db'
 import { LeadStatus, LeadSource } from '@prisma/client'
 import { format } from 'date-fns'
-import Link from 'next/link'
 import { BackArrow } from '@/components/back-arrow'
 import { LeadStatusSelect } from '@/components/lead-status-select'
-
+import { LeadAssigneeSelect } from '@/components/lead-assignee-select'
 
 function getStatusClasses(status: LeadStatus) {
     switch (status) {
@@ -45,14 +44,43 @@ function formatSource(source: LeadSource) {
 }
 
 export default async function LeadsPage() {
-    // Fetch latest leads from Prisma
+    // Fetch latest leads with assignee info
     const leads = await db.lead.findMany({
         orderBy: { createdAt: 'desc' },
         take: 100,
+        include: {
+            assignedTo: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                }
+            }
+        }
+    })
+
+    // Fetch sales team members (ADMIN, SALES_LEAD, MANAGER)
+    const salesUsers = await db.user.findMany({
+        where: {
+            isActive: true,
+            role: {
+                in: ['ADMIN', 'SALES_LEAD', 'MANAGER']
+            }
+        },
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+        },
+        orderBy: [
+            { role: 'asc' },
+            { firstName: 'asc' }
+        ]
     })
 
     return (
-        <div className="px-6 py-8 max-w-6xl mx-auto">
+        <div className="px-6 py-8 max-w-7xl mx-auto">
             <BackArrow href="/admin" className="mb-6" />
 
             <div className="mb-6 flex items-center justify-between gap-4">
@@ -64,8 +92,6 @@ export default async function LeadsPage() {
                         Showing the latest {leads.length} leads captured from your forms.
                     </p>
                 </div>
-                {/* Placeholder for future filters / search */}
-                {/* <div>filters go here</div> */}
             </div>
 
             {leads.length === 0 ? (
@@ -82,6 +108,7 @@ export default async function LeadsPage() {
                                 <th className="px-4 py-3 text-left">Event</th>
                                 <th className="px-4 py-3 text-left">Date</th>
                                 <th className="px-4 py-3 text-left">Source</th>
+                                <th className="px-4 py-3 text-left">Assigned To</th>
                                 <th className="px-4 py-3 text-left">Status</th>
                                 <th className="px-4 py-3 text-right">Created</th>
                             </tr>
@@ -124,6 +151,14 @@ export default async function LeadsPage() {
                                     </td>
 
                                     <td className="px-4 py-3 align-top whitespace-nowrap">
+                                        <LeadAssigneeSelect
+                                            leadId={lead.id}
+                                            initialAssigneeId={lead.assignedToId}
+                                            salesUsers={salesUsers}
+                                        />
+                                    </td>
+
+                                    <td className="px-4 py-3 align-top whitespace-nowrap">
                                         <LeadStatusSelect leadId={lead.id} initialStatus={lead.status} />
                                     </td>
 
@@ -136,11 +171,6 @@ export default async function LeadsPage() {
                     </table>
                 </div>
             )}
-
-            {/* Future: per-lead page */}
-            {/* <p className="mt-4 text-xs text-muted-foreground">
-        Click a lead to open a detailed view (coming soon).
-      </p> */}
         </div>
     )
 }

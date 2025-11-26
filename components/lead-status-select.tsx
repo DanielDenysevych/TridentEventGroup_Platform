@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useId } from "react"
 import { LeadStatus } from "@prisma/client"
 import { Check, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -38,6 +38,7 @@ export function LeadStatusSelect({
   leadId: string
   initialStatus: LeadStatus
 }) {
+  const id = useId()
   const [status, setStatus] = useState<LeadStatus>(initialStatus)
   const [isPending, startTransition] = useTransition()
 
@@ -55,7 +56,7 @@ export function LeadStatusSelect({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild id={id}>
         <Button
           variant="outline"
           size="sm"
