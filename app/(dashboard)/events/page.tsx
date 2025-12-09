@@ -36,15 +36,18 @@ export default async function EventsPage() {
         },
       },
       assignments: {
-        include: {
+        select: {
+          id: true,
+          role: true,
           user: {
             select: {
+              id: true,
               firstName: true,
               lastName: true,
             },
           },
         },
-      },
+      }
     },
     orderBy: {
       date: "asc",
@@ -67,7 +70,7 @@ export default async function EventsPage() {
   return (
     <main className="flex-1 p-6 lg:p-8 space-y-6">
       <EventsHeader users={users} />
-      <EventsView events={events} isAdmin={currentUser?.role === "ADMIN"} />
+      <EventsView events={events} isAdmin={currentUser?.role === "ADMIN"} users={users} />
     </main>
   )
 }

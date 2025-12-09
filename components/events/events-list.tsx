@@ -25,7 +25,10 @@ type EventWithRelations = {
     clientEmail: string
   } | null
   assignments: {
+    id: string
+    role: string
     user: {
+      id: string
       firstName: string
       lastName: string
     }
@@ -52,11 +55,13 @@ function getServiceName(services: string[]) {
 export function EventsList({
   events,
   selectedDate,
-  isAdmin
+  isAdmin,
+  users
 }: {
   events: EventWithRelations[]
   selectedDate?: Date | null
   isAdmin: boolean
+  users: Array<{ id: string; firstName: string; lastName: string; jobTitle: string | null }>
 }) {
   console.log("EventsList isAdmin prop:", isAdmin)
   const [selectedEvent, setSelectedEvent] = useState<EventWithRelations | null>(null)
@@ -160,6 +165,7 @@ export function EventsList({
         onOpenChange={setIsDetailsOpen}
         onEventUpdate={handleEventUpdate}
         isAdmin={isAdmin}
+        users={users}
       />
     </Card>
   )

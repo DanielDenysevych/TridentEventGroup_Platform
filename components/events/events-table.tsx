@@ -1,5 +1,3 @@
-// components/events/events-table.tsx
-
 "use client"
 
 import { useState } from "react"
@@ -29,7 +27,10 @@ type EventWithRelations = {
     notes?: string | null
   } | null
   assignments: {
+    id: string
+    role: string
     user: {
+      id: string
       firstName: string
       lastName: string
     }
@@ -104,10 +105,12 @@ function formatStatus(status: string) {
 
 export function EventsTable({
   events,
-  isAdmin
+  isAdmin,
+  users
 }: {
   events: EventWithRelations[]
   isAdmin: boolean
+  users: Array<{ id: string; firstName: string; lastName: string; jobTitle: string | null }>
 }) {
   const [sortField, setSortField] = useState<SortField>('eventDate')
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc')
@@ -285,6 +288,7 @@ export function EventsTable({
         onOpenChange={setIsDetailsOpen}
         onEventUpdate={handleEventUpdate}
         isAdmin={isAdmin}
+        users={users}
       />
     </>
   )

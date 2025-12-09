@@ -122,3 +122,32 @@ export async function deleteEvent(eventId: string) {
     return { success: false, error: "Failed to delete event" }
   }
 }
+
+export async function updateEventAssignments(eventId: string, assignments: Array<{ userId: string; role: string }>) {
+  try {
+    // Delete existing assignments
+    await db.eventAssignment.deleteMany({
+      where: { eventId },
+    })
+
+    // Create new assignments
+    if (assignments.length > 0) {
+      await db.eventAssignment.createMany({
+        data: assignments.map(a => ({
+          eventId,
+          userId: a.userId,
+          role: a.role,
+          isConfirmed: false,
+        })),
+      })
+    }
+
+    revalidatePath("/events")
+    revalidatePath("/")
+    
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to update assignments:", error)
+    return { success: false, error: "Failed to update assignments" }
+  }
+}

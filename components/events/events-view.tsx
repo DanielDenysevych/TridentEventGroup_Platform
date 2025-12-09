@@ -1,5 +1,3 @@
-// components/events/events-view.tsx
-
 "use client"
 
 import { useState } from "react"
@@ -30,7 +28,10 @@ type EventWithRelations = {
     notes?: string | null
   } | null
   assignments: {
+    id: string
+    role: string
     user: {
+      id: string
       firstName: string
       lastName: string
     }
@@ -39,7 +40,15 @@ type EventWithRelations = {
 
 type ViewMode = 'calendar' | 'table'
 
-export function EventsView({ events, isAdmin }: { events: EventWithRelations[]; isAdmin: boolean }) {
+export function EventsView({ 
+  events, 
+  isAdmin, 
+  users 
+}: { 
+  events: EventWithRelations[]; 
+  isAdmin: boolean; 
+  users: Array<{ id: string; firstName: string; lastName: string; jobTitle: string | null }> 
+}) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('calendar')
 
@@ -79,10 +88,19 @@ export function EventsView({ events, isAdmin }: { events: EventWithRelations[]; 
           <div className="lg:col-span-2">
             <EventsCalendar events={events} onDateClick={setSelectedDate} />
           </div>
-          <EventsList events={events} selectedDate={selectedDate} isAdmin={isAdmin} />
+          <EventsList 
+            events={events} 
+            selectedDate={selectedDate} 
+            isAdmin={isAdmin} 
+            users={users}
+          />
         </div>
       ) : (
-        <EventsTable events={events} isAdmin={isAdmin} />
+        <EventsTable 
+          events={events} 
+          isAdmin={isAdmin} 
+          users={users}
+        />
       )}
     </div>
   )
